@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+export const dynamic = 'force-dynamic';
+
 const variationsData = [
   { id: 'luxury', name: 'Luxury', description: 'Luxurious, sophisticated and high-quality aesthetics.', credits: 0, imageSrc: '/images/variations/luxury.png' },
   { id: 'creative', name: 'Creative', description: 'Experimental, avant-garde, and artistic interpretations.', credits: 0, imageSrc: '/images/variations/creative.png' },

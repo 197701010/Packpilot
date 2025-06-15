@@ -1,8 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-// AANPASSING: Importeer de iconen die we nodig hebben uit de react-icons bibliotheek
 import { FiUpload, FiGrid } from "react-icons/fi";
+
+export const dynamic = 'force-dynamic'; // <-- DEZE REGEL TOEVOEGEN
 
 // De data voor de verschillende design stijlen
 const stylesData = [
