@@ -7,7 +7,7 @@ import {
     FiType, FiDroplet, FiStar, FiFilter, FiFeather
 } from 'react-icons/fi';
 
-// Importeer alle paneel-componenten
+// Zorg ervoor dat deze bestanden bestaan in de 'components/editor/' map
 import UpscalePanel from '@/components/editor/UpscalePanel';
 import LogoPanel from '@/components/editor/LogoPanel';
 import TextPanel from '@/components/editor/TextPanel';
@@ -32,27 +32,20 @@ const editTools = [
 // Hulp-component om het juiste paneel te renderen
 const ActiveToolPanel = ({ toolId }) => {
     switch(toolId) {
-        case 'upscale':
-            return <UpscalePanel />;
-        case 'logo':
-            return <LogoPanel />;
-        case 'text':
-            return <TextPanel />;
-        case 'background':
-            return <BackgroundPanel />;
-        case 'magic-erase': // <-- TOEGEVOEGD
-            return <MagicErasePanel />;
-        case 'zoom-out': // <-- TOEGEVOEGD
-            return <ZoomOutPanel />;
-        default:
-            return <div className="text-gray-500">Selecteer een tool om de opties te zien.</div>;
+        case 'upscale': return <UpscalePanel />;
+        case 'logo': return <LogoPanel />;
+        case 'text': return <TextPanel />;
+        case 'background': return <BackgroundPanel />;
+        case 'magic-erase': return <MagicErasePanel />;
+        case 'zoom-out': return <ZoomOutPanel />;
+        default: return <div className="text-gray-500">Selecteer een tool om de opties te zien.</div>;
     }
 };
 
 export default function EditorPage() {
     const router = useRouter();
-    const [activeTool, setActiveTool] = useState('background'); // Start met 'Background' als actieve tool
-    const [mainImage, setMainImage] = useState('https://picsum.photos/seed/editorpage/800/600');
+    const [activeTool, setActiveTool] = useState('logo');
+    const [mainImage, setMainImage] = useState('https://picsum.photos/seed/editor-main/800/600');
 
     return (
         <div className="flex flex-col h-full"> 
