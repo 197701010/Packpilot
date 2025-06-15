@@ -12,7 +12,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata = {
-  title: 'AI Verpakkingsdesign',
+  title: 'Packpilot | AI Verpakkingsdesign',
   description: 'Creëer unieke verpakkingsdesigns met AI',
 };
 
