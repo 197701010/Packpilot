@@ -8,10 +8,14 @@ const config = {
   theme: {
     extend: {
       colors: {
+        'lucidia-blue': '#2563eb',
+        'lucidia-light': '#f9fafb',
+        'lucidia-dark': '#1e3a8a',
+        'lucidia-text': '#1f2937',
         'yd-yellow': '#FFD700',
         'yd-black': '#1E1E1E',
-        'yd-gray': '#F5F5F5', // Teruggezet naar de originele naam
-        'yd-red': '#DC2626'
+        'yd-gray': '#F5F5F5',
+        'yd-red': '#DC2626',
       },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
@@ -23,3 +27,4 @@ const config = {
 };
 
 export default config;
+

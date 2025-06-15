@@ -1,8 +1,26 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
 body {
-  background-color: theme('colors.yd-gray'); /* Terug naar de originele naam */
-  color: theme('colors.yd-black');
+  font-family: 'Inter', sans-serif;
 }
+@layer base {
+  body {
+    @apply bg-lucidia-light text-lucidia-text font-sans;
+  }
+
+  h1, h2, h3 {
+    @apply font-serif text-yd-black;
+  }
+
+  a {
+    @apply text-lucidia-blue hover:underline;
+  }
+
+  button {
+    @apply rounded-md;
+  }
+}
+
