@@ -18,6 +18,7 @@ export default function FinalPageClient() {
 
   useEffect(() => {
     const data = {
+      packaging: searchParams.get("packaging") || "",
       company: searchParams.get("company") || "",
       slogan: searchParams.get("slogan") || "",
       colors: searchParams.get("colors") ? searchParams.get("colors").split(',') : [],
@@ -50,21 +51,20 @@ export default function FinalPageClient() {
       ...promptData,
       numImages,
       variations: Object.keys(selectedVariations).filter(key => selectedVariations[key]),
+      totalCreditsCost: usedCredits,
     };
     
     const params = new URLSearchParams();
-    // Veilig alle data toevoegen aan de URL parameters
     for (const key in finalConfiguration) {
-      const value = finalConfiguration[key];
-      if (Array.isArray(value)) {
-        if (value.length > 0) params.append(key, value.join(','));
-      } else if (value) {
-        params.append(key, value);
-      }
+        if (Array.isArray(finalConfiguration[key])) {
+            params.append(key, finalConfiguration[key].join(','));
+        } else {
+            params.append(key, finalConfiguration[key]);
+        }
     }
     
     // Stuur de gebruiker door naar de nieuwe resultatenpagina
-    router.push(`/mockup/results?${params.toString()}`);
+    router.push(`/generator/results?${params.toString()}`);
   };
 
   return (
