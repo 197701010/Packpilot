@@ -1,26 +1,8 @@
+/* app/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
 
 body {
-  font-family: 'Inter', sans-serif;
+  @apply bg-subtle text-dark; /* Gebruik de lichte grijstint als standaard achtergrond en donker voor tekst */
 }
-@layer base {
-  body {
-    @apply bg-lucidia-light text-lucidia-text font-sans;
-  }
-
-  h1, h2, h3 {
-    @apply font-serif text-yd-black;
-  }
-
-  a {
-    @apply text-lucidia-blue hover:underline;
-  }
-
-  button {
-    @apply rounded-md;
-  }
-}
-

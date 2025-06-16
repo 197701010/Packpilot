@@ -1,37 +1,39 @@
-"use client";
-import React from "react";
-import { useRouter } from "next/navigation"; // ← importeer router
+'use client';
+
+import Button from '@/components/ui/Button';
+import { Box } from 'lucide-react'; // We gebruiken een icoon uit de Lucide bibliotheek
 
 export default function MockupPage() {
-  const router = useRouter(); // ← initialiseer router
-
   return (
-    <main className="min-h-screen bg-[#fffdf9] py-12 px-4">
-      <div className="max-w-5xl mx-auto text-center">
-        <h1 className="text-4xl font-extrabold text-yd-red font-serif mb-4">
+    <main className="flex-1 flex flex-col items-center justify-center p-8 bg-subtle">
+      <div className="text-center w-full max-w-3xl">
+        {/* Pagina Titel */}
+        <h1 className="font-display text-5xl text-brand-primary mb-3">
           Mockup
         </h1>
-        <p className="text-gray-700 text-sm mb-10">
+        <p className="text-lg text-gray-600 mb-12">
           Create packaging mockups in seconds – upload your design, see realistic results. No Photoshop needed.
         </p>
-
-        <div className="flex flex-col items-center border border-dashed border-gray-300 rounded-xl p-10 bg-white mb-10">
-          <div className="text-6xl mb-4">📦</div>
-          <h2 className="text-2xl font-semibold mb-2">Let's get started</h2>
-          <p className="text-gray-600 mb-4 max-w-md">
-            You don't have any mockups yet, click below to begin.
-          </p>
-          <button
-            onClick={() => router.push("/mockup/new")} // ← hier de navigatie
-            className="bg-yd-red hover:bg-red-700 text-white px-6 py-3 rounded-xl font-bold shadow-md transition"
-          >
-            Get started
-          </button>
+        
+        {/* De 'call to action' kaart */}
+        <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-12 flex flex-col items-center">
+            {/* Icoon */}
+            <div className="bg-yellow-100 text-yellow-600 p-4 rounded-full mb-5">
+                <Box className="w-10 h-10" />
+            </div>
+            {/* Kaart Titel & Tekst */}
+            <h2 className="text-3xl font-semibold text-dark mb-2">Let's get started</h2>
+            <p className="text-gray-500 mb-8">You don't have any mockups yet, click below to begin.</p>
+            
+            {/* Knop */}
+            <Button href="/mockup/new">
+                Get started
+            </Button>
         </div>
-
-        <div className="text-center text-sm text-gray-400">
-          (Hier komt straks het productoverzicht en mockup functionaliteit)
-        </div>
+        
+        <p className="text-gray-400 mt-8 text-sm">
+            (Hier komt straks het productoverzicht en mockup functionaliteit)
+        </p>
       </div>
     </main>
   );

@@ -1,30 +1,28 @@
 /** @type {import('tailwindcss').Config} */
 const config = {
   content: [
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
       colors: {
-        'lucidia-blue': '#2563eb',
-        'lucidia-light': '#f9fafb',
-        'lucidia-dark': '#1e3a8a',
-        'lucidia-text': '#1f2937',
-        'yd-yellow': '#FFD700',
-        'yd-black': '#1E1E1E',
-        'yd-gray': '#F5F5F5',
-        'yd-red': '#DC2626',
+        brand: {
+          primary: '#D92D20',                // Rood
+          'primary-foreground': '#FFFFFF',   // WIT (voor tekst op de rode knop)
+          accent: '#FDB022',                 // Geel
+        },
+        dark: '#101828',      // Zwart voor tekst
+        light: '#FFFFFF',     // Wit
+        subtle: '#F8F9FA',    // Zeer lichte grijstint
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        serif: ['Playfair Display', 'serif'],
+        sans: ['var(--font-inter)', 'sans-serif'],
+        display: ['var(--font-playfair)', 'serif'],
       },
     },
   },
   plugins: [],
 };
-
 export default config;
-

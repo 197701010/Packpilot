@@ -1,8 +1,11 @@
-"use client";
+'use client';
+
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 
-export default function AanvraagPage() {
+export default function OnboardingPage() { // Naam van component duidelijker gemaakt
   const router = useRouter();
   const [bedrijf, setBedrijf] = useState("");
   const [slogan, setSlogan] = useState("");
@@ -11,31 +14,17 @@ export default function AanvraagPage() {
   const [tools, setTools] = useState([]);
 
   const doelenOpties = [
-    "Create packaging designs",
-    "Get custom dielines",
-    "Create packaging mockups",
-    "Create AI product photography",
-    "Generate early design concepts",
-    "Something else",
+    "Create packaging designs", "Get custom dielines", "Create packaging mockups",
+    "Create AI product photography", "Generate early design concepts", "Something else",
   ];
 
   const toolsOpties = [
-    "Photoshop",
-    "Illustrator",
-    "Canva (or similar)",
-    "AI image generator (Midjourney, DALL-E, etc)",
-    "3D tools (Blender, KeyShot, etc)",
-    "Packaging CAD Software",
-    "None of these",
-    "Other",
+    "Photoshop", "Illustrator", "Canva (or similar)", "AI image generator (Midjourney, DALL-E, etc)",
+    "3D tools (Blender, KeyShot, etc)", "Packaging CAD Software", "None of these", "Other",
   ];
 
   const toggleCheckbox = (item, list, setList) => {
-    if (list.includes(item)) {
-      setList(list.filter((i) => i !== item));
-    } else {
-      setList([...list, item]);
-    }
+    setList(list.includes(item) ? list.filter((i) => i !== item) : [...list, item]);
   };
 
   const handleSubmit = (e) => {
@@ -43,109 +32,72 @@ export default function AanvraagPage() {
     if (!bedrijf || !rol || rol === "Selecteer je rol") {
       return alert("Vul alle verplichte velden correct in.");
     }
-    router.replace("/toolkeuze");
+    // HIER IS DE REGEL DIE JE ZOCHT.
+    // We veranderen "/toolkeuze" naar "/dashboard".
+    router.replace("/dashboard");
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 py-12 px-4">
+    <main className="min-h-screen bg-subtle py-12 px-4">
       <form
         onSubmit={handleSubmit}
         className="bg-white p-10 rounded-2xl shadow-lg max-w-3xl mx-auto border border-gray-200"
       >
-        <h2 className="text-4xl font-bold text-center text-yd-red mb-2 font-serif">
+        <h2 className="text-4xl font-bold text-center text-brand-primary mb-2 font-display">
           Welkom bij PackPilot
         </h2>
         <p className="text-center text-gray-700 mb-8 text-lg">
           Personaliseer je ervaring
         </p>
 
-        {/* Bedrijfsnaam */}
-        <label className="block mb-2 text-sm font-medium text-gray-900">
-          Bedrijfsnaam
-        </label>
-        <input
-          type="text"
-          value={bedrijf}
-          onChange={(e) => setBedrijf(e.target.value)}
-          className="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-yd-red"
-          placeholder="Je bedrijfsnaam"
-          required
-        />
-
-        {/* Slogan */}
-        <label className="block mb-2 text-sm font-medium text-gray-900">
-          Slogan (optioneel)
-        </label>
-        <input
-          type="text"
-          value={slogan}
-          onChange={(e) => setSlogan(e.target.value)}
-          className="w-full p-3 border border-gray-300 rounded-lg mb-6 focus:outline-none focus:ring-2 focus:ring-yd-red"
-          placeholder="Bijv. Slimmere designs, sneller"
-        />
-
-        {/* Rol */}
-        <label className="block mb-2 text-sm font-medium text-gray-900">
-          Wat is je rol?
-        </label>
-        <select
-          value={rol}
-          onChange={(e) => setRol(e.target.value)}
-          className="w-full p-3 border border-gray-300 rounded-lg mb-6 focus:outline-none focus:ring-2 focus:ring-yd-red"
-          required
-        >
-          <option>Selecteer je rol</option>
-          <option>Founder / Business owner</option>
-          <option>Brand / Marketing</option>
-          <option>Graphic or Packaging Design</option>
-          <option>Packaging supplier</option>
-          <option>Sales</option>
-          <option>Other</option>
-        </select>
-
-        {/* Waarom gebruik je PackPilot */}
-        <label className="block mb-2 text-sm font-medium text-gray-900">
-          Waarom gebruik je PackPilot?
-        </label>
-        <div className="space-y-2 mb-6">
-          {doelenOpties.map((item) => (
-            <label key={item} className="flex items-center">
-              <input
-                type="checkbox"
-                checked={doelen.includes(item)}
-                onChange={() => toggleCheckbox(item, doelen, setDoelen)}
-                className="mr-2"
-              />
-              {item}
-            </label>
-          ))}
+        <div className="mb-4">
+            <label htmlFor="bedrijf" className="block mb-2 text-sm font-medium text-dark">Bedrijfsnaam</label>
+            <Input id="bedrijf" type="text" value={bedrijf} onChange={(e) => setBedrijf(e.target.value)} placeholder="Je bedrijfsnaam" required />
         </div>
 
-        {/* Tools */}
-        <label className="block mb-2 text-sm font-medium text-gray-900">
-          Welke tools gebruik je?
-        </label>
-        <div className="space-y-2 mb-8">
-          {toolsOpties.map((tool) => (
-            <label key={tool} className="flex items-center">
-              <input
-                type="checkbox"
-                checked={tools.includes(tool)}
-                onChange={() => toggleCheckbox(tool, tools, setTools)}
-                className="mr-2"
-              />
-              {tool}
-            </label>
-          ))}
+        <div className="mb-6">
+            <label htmlFor="slogan" className="block mb-2 text-sm font-medium text-dark">Slogan (optioneel)</label>
+            <Input id="slogan" type="text" value={slogan} onChange={(e) => setSlogan(e.target.value)} placeholder="Bijv. Slimmere designs, sneller" />
         </div>
 
-        {/* CTA knop */}
-        <button
-          type="submit"
-          className="w-full bg-yd-red text-white py-4 rounded-xl text-lg font-bold hover:bg-red-700 transition uppercase tracking-wide shadow-lg"
-        >
-          Get Started
-        </button>
+        <div className="mb-6">
+            <label htmlFor="rol" className="block mb-2 text-sm font-medium text-dark">Wat is je rol?</label>
+            <select id="rol" value={rol} onChange={(e) => setRol(e.target.value)} className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/50" required >
+                <option>Selecteer je rol</option>
+                <option>Founder / Business owner</option>
+                <option>Brand / Marketing</option>
+                <option>Graphic or Packaging Design</option>
+            </select>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 mb-8">
+            <div>
+                <label className="block mb-4 text-sm font-medium text-dark">Waarom gebruik je PackPilot?</label>
+                <div className="space-y-3">
+                {doelenOpties.map((item) => (
+                    <label key={item} className="flex items-center text-gray-700 cursor-pointer">
+                        <input type="checkbox" checked={doelen.includes(item)} onChange={() => toggleCheckbox(item, doelen, setDoelen)} className="h-4 w-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary/50" />
+                        <span className="ml-3">{item}</span>
+                    </label>
+                ))}
+                </div>
+            </div>
+            <div>
+                <label className="block mb-4 text-sm font-medium text-dark">Welke tools gebruik je?</label>
+                <div className="space-y-3">
+                {toolsOpties.map((tool) => (
+                    <label key={tool} className="flex items-center text-gray-700 cursor-pointer">
+                        <input type="checkbox" checked={tools.includes(tool)} onChange={() => toggleCheckbox(tool, tools, setTools)} className="h-4 w-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary/50" />
+                        <span className="ml-3">{tool}</span>
+                    </label>
+                ))}
+                </div>
+            </div>
+        </div>
+
+        <Button type="submit" className="w-full text-lg uppercase tracking-wide">
+            Get Started
+        </Button>
       </form>
     </main>
   );

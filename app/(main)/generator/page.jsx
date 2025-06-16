@@ -1,42 +1,40 @@
-"use client";
-import React from 'react';
-import { useRouter } from 'next/navigation';
+'use client';
 
-export default function GeneratorHomePage() {
-  const router = useRouter();
+import Button from '@/components/ui/Button';
+import { Sparkles } from 'lucide-react'; // We gebruiken een ander icoon, maar uit dezelfde bibliotheek
 
-  const handleStart = () => {
-    // Stuur de gebruiker naar de pagina om een verpakking te kiezen
-    router.push('/generator/new');
-  };
-
+export default function GeneratorPage() {
   return (
-    <div className="min-h-screen bg-rose-50 flex flex-col items-center pt-20 px-4">
-      <div className="text-center">
-        <h1 className="text-5xl font-serif text-red-700">Generator</h1>
-        <p className="text-gray-600 mt-4 max-w-md">
+    <main className="flex-1 flex flex-col items-center justify-center p-8 bg-subtle">
+      <div className="text-center w-full max-w-3xl">
+        {/* Pagina Titel (aangepast) */}
+        <h1 className="font-display text-5xl text-brand-primary mb-3">
+          Generator
+        </h1>
+        <p className="text-lg text-gray-600 mb-12">
           Genereer creatieve verpakkingsideeën – voer je prompt in, kies je kleuren, laat je visie tot leven komen.
         </p>
-      </div>
-
-      <div className="mt-12 w-full max-w-2xl bg-white rounded-2xl shadow-sm p-16 flex flex-col items-center text-center">
-        {/* Je kunt hier een echt icoon of afbeelding plaatsen */}
-        <div className="w-16 h-16 bg-gray-200 rounded-full mb-4 text-xs flex items-center justify-center">
-            Icon
+        
+        {/* De 'call to action' kaart (identieke stijl) */}
+        <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-12 flex flex-col items-center">
+            {/* Icoon (aangepast) */}
+            <div className="bg-red-100 text-red-600 p-4 rounded-full mb-5">
+                <Sparkles className="w-10 h-10" />
+            </div>
+            {/* Kaart Titel & Tekst (aangepast) */}
+            <h2 className="text-3xl font-semibold text-dark mb-2">Let's get started</h2>
+            <p className="text-gray-500 mb-8">You don't have any generations yet, click below to begin.</p>
+            
+            {/* Knop */}
+            <Button href="/generator/new">
+                Get started
+            </Button>
         </div>
-        <h2 className="text-2xl font-bold text-gray-900">Let's get started</h2>
-        <p className="text-gray-500 mt-2">You don't have any generations yet, click below to begin.</p>
-        <button
-          onClick={handleStart}
-          className="mt-6 px-8 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors"
-        >
-          Get started
-        </button>
+        
+        <p className="text-gray-400 mt-8 text-sm">
+            (Hier komt straks het overzicht van gegenereerde ideeën)
+        </p>
       </div>
-
-      <div className="mt-8 text-gray-500">
-        <p>(Hier komt straks het overzicht van gegenereerde ideeën)</p>
-      </div>
-    </div>
+    </main>
   );
 }
