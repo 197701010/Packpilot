@@ -1,5 +1,5 @@
 import React from 'react';
-import Link from 'next/link';
+import Link from 'next/link'; // Zorg dat Link geïmporteerd is
 import Button from './ui/Button';
 
 const navLinks = [
@@ -28,8 +28,9 @@ export default function Header() {
               ))}
             </nav>
             <div className="hidden md:block">
-              <Button href="/start-ai-aanvraag">
-                START AI-AANVRAAG
+              {/* GECORRIGEERDE KNOP */}
+              <Button asChild>
+                <Link href="/aanvraag">START AI-AANVRAAG</Link>
               </Button>
             </div>
           </div>

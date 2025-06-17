@@ -1,57 +1,64 @@
-"use client";
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+'use client';
 
-export default function ToolkeuzePage() {
-  const router = useRouter();
-  const [selected, setSelected] = useState("");
+import Link from 'next/link';
+import { Sparkles, Box, Pencil, Folder } from 'lucide-react';
 
-  const tools = [
-    {
-      titel: "Generator",
-      beschrijving: "Genereer creatieve verpakkingsideeën op basis van je input.",
-      icoon: "✨",
-      link: "/generator",
-    },
-    {
-      titel: "Mockup",
-      beschrijving: "Maak realistische mockups van je verpakking.",
-      icoon: "📦",
-      link: "/mockup",
-    },
-    {
-      titel: "Editor",
-      beschrijving: "Pas ontwerpen aan met krachtige tools zonder designskills.",
-      icoon: "🖌️",
-      link: "/editor",
-    },
-    {
-      titel: "Collecties",
-      beschrijving: "Bekijk en organiseer je gegenereerde ontwerpen.",
-      icoon: "🗂️",
-      link: "/collecties",
-    },
-  ];
+// Data voor onze tool-kaarten
+const tools = [
+  {
+    name: 'Generator',
+    description: 'Genereer creatieve verpakkingsideeën op basis van je input.',
+    href: '/generator',
+    icon: Sparkles,
+    iconColor: 'text-yellow-500',
+  },
+  {
+    name: 'Mockup',
+    description: 'Maak realistische mockups van je verpakking.',
+    href: '/mockup',
+    icon: Box,
+    iconColor: 'text-red-500',
+  },
+  {
+    name: 'Editor',
+    description: 'Pas ontwerpen aan met krachtige tools zonder designskills.',
+    href: '/editor',
+    icon: Pencil,
+    iconColor: 'text-pink-500',
+  },
+  {
+    name: 'Collecties',
+    description: 'Bekijk en organiseer je gegenereerde ontwerpen.',
+    href: '/collections',
+    icon: Folder,
+    iconColor: 'text-blue-500',
+  },
+];
 
+export default function DashboardPage() {
   return (
-    <main className="min-h-screen bg-[#fffdf9] py-12 px-4">
-      <div className="max-w-4xl mx-auto text-center">
-        <h1 className="text-4xl font-extrabold text-yd-red font-serif mb-2">
-          Kies je volgende stap
-        </h1>
-        <p className="text-gray-700 text-lg mb-10">Wat wil je doen?</p>
+    <main className="flex-1 p-8 bg-subtle flex items-center justify-center">
+      <div className="w-full max-w-4xl">
+        <div className="text-center">
+          <h1 className="font-display text-4xl text-dark">Kies je volgende stap</h1>
+          <p className="mt-2 text-lg text-gray-600">Wat wil je doen?</p>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2">
           {tools.map((tool) => (
-            <button
-              key={tool.titel}
-              onClick={() => router.push(tool.link)}
-              className="flex flex-col items-center bg-white p-6 rounded-2xl shadow hover:shadow-lg border border-gray-200 transition"
+            <Link
+              key={tool.name}
+              href={tool.href}
+              className="group block p-8 bg-white rounded-xl border shadow-sm hover:shadow-lg hover:border-brand-primary transition-all duration-300"
             >
-              <div className="text-5xl mb-3">{tool.icoon}</div>
-              <h3 className="text-xl font-bold text-yd-red mb-1">{tool.titel}</h3>
-              <p className="text-sm text-gray-600">{tool.beschrijving}</p>
-            </button>
+              <div className="flex flex-col items-center text-center">
+                <div className={`p-3 rounded-full mb-4`}>
+                  <tool.icon className={`h-10 w-10 ${tool.iconColor}`} strokeWidth={1.5} />
+                </div>
+                <h2 className="text-2xl font-semibold text-dark">{tool.name}</h2>
+                <p className="mt-2 text-gray-500">{tool.description}</p>
+              </div>
+            </Link>
           ))}
         </div>
       </div>

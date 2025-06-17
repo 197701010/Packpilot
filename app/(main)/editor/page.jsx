@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link'; // Nieuwe import voor de links
 import { Sparkles, Grid3x3, Upload } from 'lucide-react';
 
 // Data voor onze navigatie-tabs
@@ -45,7 +46,6 @@ export default function EditorPage() {
 
       {/* Rechter Content Kolom */}
       <section className="flex-1 p-8 bg-subtle">
-        {/* Hier tonen we de content gebaseerd op de actieve tab */}
         {activeTab === TABS.GENERATIONS && <GenerationsContent />}
         {activeTab === TABS.COLLECTIONS && <CollectionsContent />}
         {activeTab === TABS.UPLOAD && <UploadContent />}
@@ -59,7 +59,7 @@ export default function EditorPage() {
   );
 }
 
-// Een aparte component voor de navigatieknoppen.
+// Component voor de navigatieknoppen
 function TabButton({ icon: Icon, label, isActive, onClick }) {
     const activeClasses = 'bg-red-50 border-brand-primary text-brand-primary';
     const inactiveClasses = 'border-transparent text-gray-600 hover:bg-gray-100';
@@ -74,24 +74,12 @@ function TabButton({ icon: Icon, label, isActive, onClick }) {
     );
 }
 
-// Component voor de "Generations" content met de kleinere kaarten
+// "Generations" content met klikbare kaarten
 function GenerationsContent() {
   const generatedImages = [
-    {
-      id: 1,
-      title: 'Aerosol can for michael',
-      imageUrl: 'https://images.unsplash.com/photo-1505877934279-9189a7214695?q=80&w=800',
-    },
-    {
-      id: 2,
-      title: 'Advent calendar for cvbox',
-      imageUrl: 'https://images.unsplash.com/photo-1599318114135-2dbf02865985?q=80&w=800',
-    },
-    {
-      id: 3,
-      title: 'New product launch',
-      imageUrl: 'https://images.unsplash.com/photo-1544813545-16ada6b46416?q=80&w=800',
-    },
+    { id: 1, title: 'Aerosol can for michael', imageUrl: '/preview-1.jpg' },
+    { id: 2, title: 'Advent calendar for cvbox', imageUrl: '/preview-2.jpg' },
+    { id: 3, title: 'New product launch', imageUrl: '/preview-3.jpg' },
   ];
 
   return (
@@ -99,9 +87,10 @@ function GenerationsContent() {
       <h2 className="text-xl font-semibold mb-4">Choose a generation</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {generatedImages.map((image) => (
-          <div 
+          <Link 
             key={image.id} 
-            className="group rounded-lg overflow-hidden shadow-md border border-gray-200 bg-white cursor-pointer hover:border-brand-primary transition"
+            href={`/editor/${image.id}`}
+            className="group block rounded-lg overflow-hidden shadow-md border border-gray-200 bg-white hover:border-brand-primary transition"
           >
             <img
               src={image.imageUrl}
@@ -111,19 +100,19 @@ function GenerationsContent() {
             <div className="p-2 text-sm font-semibold text-dark group-hover:text-brand-primary">
               {image.title}
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>
   );
 }
 
-// Placeholder voor de "Collections" content
+// Placeholder voor "Collections"
 function CollectionsContent() {
   return <div className="flex items-center justify-center h-full text-gray-500">Collections komen hier.</div>
 }
 
-// Placeholder voor de "Upload" content
+// Placeholder voor "Upload"
 function UploadContent() {
   return (
     <div className="flex flex-col items-center justify-center h-full text-gray-500">
@@ -134,10 +123,9 @@ function UploadContent() {
   )
 }
 
-// Component voor het "Recent Edits" paneel
+// Component voor "Recent Edits"
 function RecentEditsPanel() {
     const [filter, setFilter] = useState('in-progress');
-
     return (
         <div>
             <h2 className="text-lg font-semibold text-dark mb-4">Recent Edits</h2>
