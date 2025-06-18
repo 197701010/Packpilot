@@ -18,7 +18,8 @@ export async function POST(request) {
     console.log('🎯 Selected AI Service:', body.aiService);
     
     // Kies welke AI service te gebruiken op basis van frontend keuze
-    const useReplicate = body.aiService !== 'flux'; // Als het niet flux is, gebruik Replicate
+    // MET DEZE (om altijd Flux te gebruiken):
+const useReplicate = false; // Altijd Flux gebruiken
     
     if (useReplicate) {
       console.log('🎯 Using Replicate API...');
