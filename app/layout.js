@@ -1,5 +1,6 @@
 import { Inter, Playfair_Display } from 'next/font/google';
-import './globals.css';
+import { ClerkProvider } from '@clerk/nextjs';
+import './globals.css'; // De globale CSS hoort hier
 
 const inter = Inter({
   subsets: ['latin'],
@@ -19,10 +20,12 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} ${playfair.variable} font-sans bg-subtle text-dark`}>
-        {children}
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en">
+        <body className={`${inter.variable} ${playfair.variable} font-sans bg-subtle text-dark`}>
+          {children}
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

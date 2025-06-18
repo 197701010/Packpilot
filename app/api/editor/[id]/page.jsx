@@ -1,26 +1,37 @@
+// =================================================================
+//    VOLLEDIGE CODE VOOR app/(main)/(tools)/editor/[id]/page.jsx
+// =================================================================
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
-import { ArrowLeft, Download, XOctagon, Wand2, Image as ImageIcon, ZoomOut, Star, Type, Droplet, Filter, Scissors, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, XOctagon, Wand2, Image as ImageIcon, ZoomOut, Star, Type, Droplet, Filter, Scissors } from 'lucide-react';
 
+// Data (onveranderd)
 const editTools = [
-    { id: 'magic-erase', name: 'Magic Erase', icon: Wand2 }, { id: 'background', name: 'Background', icon: ImageIcon },
-    { id: 'zoom-out', name: 'Zoom Out', icon: ZoomOut }, { id: 'logo', name: 'Logo', icon: Star },
-    { id: 'upscale', name: 'Upscale', icon: Scissors }, { id: 'text', name: 'Text', icon: Type },
-    { id: 'adjust', name: 'Adjust', icon: Filter, status: 'PLUS' }, { id: 'colour', name: 'Colour', icon: Droplet, status: 'COMING SOON' },
+    { id: 'magic-erase', name: 'Magic Erase', icon: Wand2 },
+    { id: 'background', name: 'Background', icon: ImageIcon },
+    { id: 'zoom-out', name: 'Zoom Out', icon: ZoomOut },
+    { id: 'logo', name: 'Logo', icon: Star },
+    { id: 'upscale', name: 'Upscale', icon: Scissors },
+    { id: 'text', name: 'Text', icon: Type },
+    { id: 'adjust', name: 'Adjust', icon: Filter, status: 'PLUS' },
+    { id: 'colour', name: 'Colour', icon: Droplet, status: 'COMING SOON' },
 ];
 const generatedImages = [
-    { id: '1', title: 'Aerosol can for michael', imageUrl: '/preview-1.jpg' }, { id: '2', title: 'Advent calendar for cvbox', imageUrl: '/preview-2.jpg' },
+    { id: '1', title: 'Aerosol can for michael', imageUrl: '/preview-1.jpg' },
+    { id: '2', title: 'Advent calendar for cvbox', imageUrl: '/preview-2.jpg' },
     { id: '3', title: 'New product launch', imageUrl: '/preview-3.jpg' },
 ];
+
 
 export default function EditorDetailPage() {
     const router = useRouter();
     const params = useParams();
     const [activeTool, setActiveTool] = useState(null);
     const [image, setImage] = useState(null);
+    const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
         if (params.id) {
@@ -28,6 +39,34 @@ export default function EditorDetailPage() {
             if (selectedImage) setImage(selectedImage);
         }
     }, [params.id]);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    // --- FORENSISCHE DEBUG LOG ---
+    // Dit effect draait elke keer als 'activeTool' verandert.
+    // VERVANG DE VORIGE DEBUG-HOOK MET DEZE:
+
+// --- ONVOORWAARDELIJKE DEBUG LOG ---
+useEffect(() => {
+    // We halen de 'if' check weg om ALTIJD te loggen.
+    console.log("--- DEBUG LOG ---");
+    console.log("De waarde van activeTool is nu:", activeTool);
+    console.log("Het type van activeTool is nu:", typeof activeTool);
+    console.log("--- EINDE DEBUG ---");
+}, [activeTool]);
+
+            // Log de character codes van de string
+            let charCodes = [];
+            for (let i = 0; i < activeTool.length; i++) {
+                charCodes.push(activeTool.charCodeAt(i));
+            }
+            console.log("Character Codes:", charCodes.join(', '));
+            console.log("--- EINDE DEBUG ---");
+        }
+    }, [activeTool]);
+
 
     if (!image) { return <div className="flex items-center justify-center h-full">Afbeelding laden...</div>; }
 
@@ -62,50 +101,20 @@ export default function EditorDetailPage() {
                 </section>
 
                 <aside className="col-span-3">
-                    <div className="bg-white p-6 rounded-xl border h-full">
-                        {/* HIER IS DE FIX: de key={activeTool} dwingt React om het paneel volledig opnieuw op te bouwen */}
-                        <ActiveToolPanel key={activeTool} toolId={activeTool} currentImage={image} setImage={setImage} />
+                    <div className="bg-white p-6 rounded-xl border h-full flex flex-col">
+                        {isMounted && !activeTool && (
+                            <div className="text-center text-gray-500 m-auto">Selecteer een tool om te beginnen.</div>
+                        )}
+                        {isMounted && activeTool === 'zoom-out' && (
+                            <div className="space-y-4"><h3 className="font-bold text-lg">Zoom Out Paneel</h3><p>Werkt!</p></div>
+                        )}
+                        {isMounted && activeTool === 'logo' && (
+                           <div className="space-y-4"><h3 className="font-bold text-lg">Logo Paneel</h3><p>Werkt!</p></div>
+                        )}
+                        {/* We testen nu alleen deze twee voor de eenvoud */}
                     </div>
                 </aside>
             </div>
-        </div>
-    );
-}
-
-function ActiveToolPanel({ toolId, currentImage, setImage }) {
-    if (!toolId) { return <div className="p-4 h-full flex items-center justify-center text-center text-gray-500">Selecteer een tool om te beginnen.</div>; }
-    switch(toolId) {
-        case 'zoom-out': return <ZoomOutPanel currentImage={currentImage} setImage={setImage} />;
-        default: return <div className="p-4 text-center text-gray-500">Tool <span className="font-semibold">{toolId}</span> geselecteerd.</div>;
-    }
-};
-
-function ZoomOutPanel({ currentImage, setImage }) {
-    const [isLoading, setIsLoading] = useState(false);
-    const handleGenerate = async () => {
-        setIsLoading(true);
-        try {
-            const response = await fetch('/api/editor/zoom-out', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ imageUrl: currentImage.imageUrl }),
-            });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.detail || 'Fout opgetreden.');
-            setImage(prevImage => ({ ...prevImage, imageUrl: result.newImageUrl }));
-        } catch (error) {
-            alert(`Fout: ${error.message}`);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    return (
-        <div className="space-y-4">
-            <h3 className="font-semibold text-dark">Zoom Out</h3>
-            <p className="text-sm text-gray-600">Expand the canvas of your image...</p>
-            <Button className="w-full" onClick={handleGenerate} disabled={isLoading}>
-                {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Genereren...</>) : 'Generate More'}
-            </Button>
         </div>
     );
 }
