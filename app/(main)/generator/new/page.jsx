@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-// AANPASSING: De 'name' eigenschap van elk object is nu vertaald naar het Nederlands.
+// Je bestaande packagingTypes array
 const packagingTypes = [
   { id: 'advent-calendar', name: 'Adventskalender', imageSrc: '/images/packaging/advent-calendar.jpg' },
   { id: 'aerosol-can', name: 'Spuitbus', imageSrc: '/images/packaging/aerosol-can.jpg' },
@@ -64,22 +64,109 @@ const packagingTypes = [
 export default function SelectPackagingPage() {
   const router = useRouter();
   const [selectedPackaging, setSelectedPackaging] = useState(null);
+  
+  // ← NIEUWE STATE VOOR AI SERVICE
+  const [aiService, setAiService] = useState('replicate');
+
+  // ← NIEUWE AI SERVICE SELECTOR COMPONENT
+  const AIServiceSelector = ({ selectedService, onServiceChange }) => {
+    const services = [
+      {
+        id: 'replicate',
+        name: 'Replicate',
+        description: 'Stable Diffusion - Bewezen kwaliteit',
+        speed: 'Gemiddeld (1-3 min)',
+        icon: '🎯'
+      },
+      {
+        id: 'flux',
+        name: 'Black Forest Labs (Flux)',
+        description: 'Nieuwste AI technologie',
+        speed: 'Snel (30s-2 min)',
+        icon: '🌲'
+      }
+    ];
+
+    return (
+      <div className="mb-8 bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">AI Service</h2>
+          <p className="text-sm text-gray-600">Kies welke AI service je wilt gebruiken</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {services.map((service) => (
+            <div
+              key={service.id}
+              className={`relative cursor-pointer rounded-lg border p-4 transition-all duration-200 hover:shadow-md ${
+                selectedService === service.id
+                  ? 'border-purple-500 bg-purple-50 ring-2 ring-purple-500'
+                  : 'border-gray-300 bg-white hover:border-gray-400'
+              }`}
+              onClick={() => onServiceChange(service.id)}
+            >
+              <div className="flex items-start space-x-3">
+                <div className="text-2xl">{service.icon}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      name="aiService"
+                      value={service.id}
+                      checked={selectedService === service.id}
+                      onChange={() => onServiceChange(service.id)}
+                      className="h-4 w-4 text-purple-600 border-gray-300 focus:ring-purple-500"
+                    />
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      {service.name}
+                    </h3>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {service.description}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {service.speed}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {selectedService && (
+          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+            <span className="text-sm font-medium text-gray-700">
+              {selectedService === 'replicate' ? 'Replicate' : 'Black Forest Labs'} geselecteerd
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const handleNext = () => {
     if (!selectedPackaging) {
       alert("Selecteer alstublieft een verpakkingstype.");
       return;
     }
-    router.push(`/generator/color?packaging=${selectedPackaging}`);
+    
+    // ← UPDATED: Voeg aiService toe aan de URL parameters
+    router.push(`/generator/color?packaging=${selectedPackaging}&aiService=${aiService}`);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center p-8">
       <div className="w-full max-w-6xl">
-        <div className="text-left mb-12">
+        <div className="text-left mb-8">
           <p className="text-sm font-bold text-gray-500 tracking-wider">KIES JE VERPAKKING</p>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mt-2">Kies je verpakking</h1>
         </div>
+
+        {/* ← NIEUWE AI SERVICE SELECTOR */}
+        <AIServiceSelector 
+          selectedService={aiService}
+          onServiceChange={setAiService}
+        />
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {packagingTypes.map((pkg) => (
