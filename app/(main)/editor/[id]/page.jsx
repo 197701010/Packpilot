@@ -1,111 +1,32 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Button from '@/components/ui/Button';
-import { ArrowLeft, Download, XOctagon, Wand2, Image as ImageIcon, ZoomOut, Star, Type, Droplet, Filter, Scissors, Loader2 } from 'lucide-react';
+import { useParams } from 'next/navigation';
 
-const editTools = [
-    { id: 'magic-erase', name: 'Magic Erase', icon: Wand2 }, { id: 'background', name: 'Background', icon: ImageIcon },
-    { id: 'zoom-out', name: 'Zoom Out', icon: ZoomOut }, { id: 'logo', name: 'Logo', icon: Star },
-    { id: 'upscale', name: 'Upscale', icon: Scissors }, { id: 'text', name: 'Text', icon: Type },
-    { id: 'adjust', name: 'Adjust', icon: Filter, status: 'PLUS' }, { id: 'colour', name: 'Colour', icon: Droplet, status: 'COMING SOON' },
-];
-const generatedImages = [
-    { id: '1', title: 'Aerosol can for michael', imageUrl: '/preview-1.jpg' }, { id: '2', title: 'Advent calendar for cvbox', imageUrl: '/preview-2.jpg' },
-    { id: '3', title: 'New product launch', imageUrl: '/preview-3.jpg' },
-];
+export default function EditorPage() {
+  const params = useParams();
+  const { id } = params;
 
-export default function EditorDetailPage() {
-    const router = useRouter();
-    const params = useParams();
-    const [activeTool, setActiveTool] = useState(null);
-    const [image, setImage] = useState(null);
-
-    useEffect(() => {
-        if (params.id) {
-            const selectedImage = generatedImages.find(img => img.id.toString() === params.id);
-            if (selectedImage) setImage(selectedImage);
-        }
-    }, [params.id]);
-
-    if (!image) { return <div className="flex items-center justify-center h-full">Afbeelding laden...</div>; }
-
-    return (
-        <div className="flex flex-col h-full bg-subtle"> 
-            <header className="flex items-center justify-between p-3 border-b bg-white flex-shrink-0">
-                <Button variant="ghost" onClick={() => router.back()}><ArrowLeft className="w-5 h-5 mr-2" />Editor</Button>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline"><Download className="w-5 h-5 mr-2" />Download</Button>
-                    <Button variant="destructive"><XOctagon className="w-5 h-5 mr-2" />Discard</Button>
-                    <Button>Generate</Button>
-                </div>
-            </header>
-            
-            <div className="flex-1 grid grid-cols-12 gap-4 p-4">
-                <aside className="col-span-3">
-                    <div className="bg-white p-4 rounded-xl border h-full">
-                        <h2 className="text-xl font-bold mb-1">Edit tools</h2>
-                        <div className="grid grid-cols-2 gap-3 mt-4">
-                            {editTools.map(tool => (
-                                <div key={tool.id} onClick={() => setActiveTool(tool.id)} className={`p-3 border-2 rounded-xl text-center cursor-pointer transition-all ${activeTool === tool.id ? 'border-brand-primary bg-red-50' : 'border-transparent bg-gray-50 hover:bg-gray-100'}`}>
-                                    <tool.icon className="mx-auto w-7 h-7 text-dark" strokeWidth={1.5} />
-                                    <p className="font-semibold mt-2 text-sm">{tool.name}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </aside>
-
-                <section className="col-span-6 flex items-center justify-center bg-white rounded-xl p-4 border">
-                    <img src={image.imageUrl} alt={image.title} className="max-w-full max-h-full object-contain rounded-lg"/>
-                </section>
-
-                <aside className="col-span-3">
-                    <div className="bg-white p-6 rounded-xl border h-full">
-                        {/* HIER IS DE FIX: de key={activeTool} dwingt React om het paneel volledig opnieuw op te bouwen */}
-                        <ActiveToolPanel key={activeTool} toolId={activeTool} currentImage={image} setImage={setImage} />
-                    </div>
-                </aside>
-            </div>
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-4">Afbeelding Editor</h1>
+        <p className="text-gray-600 mb-8">Editor voor ontwerp: {id}</p>
+        
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          <p className="text-center text-gray-500">
+            Editor functionaliteit komt binnenkort beschikbaar.
+          </p>
+          
+          <div className="mt-6 text-center">
+            <button 
+              onClick={() => window.history.back()}
+              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+            >
+              Terug naar Resultaten
+            </button>
+          </div>
         </div>
-    );
-}
-
-function ActiveToolPanel({ toolId, currentImage, setImage }) {
-    if (!toolId) { return <div className="p-4 h-full flex items-center justify-center text-center text-gray-500">Selecteer een tool om te beginnen.</div>; }
-    switch(toolId) {
-        case 'zoom-out': return <ZoomOutPanel currentImage={currentImage} setImage={setImage} />;
-        default: return <div className="p-4 text-center text-gray-500">Tool <span className="font-semibold">{toolId}</span> geselecteerd.</div>;
-    }
-};
-
-function ZoomOutPanel({ currentImage, setImage }) {
-    const [isLoading, setIsLoading] = useState(false);
-    const handleGenerate = async () => {
-        setIsLoading(true);
-        try {
-            const response = await fetch('/api/editor/zoom-out', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ imageUrl: currentImage.imageUrl }),
-            });
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.detail || 'Fout opgetreden.');
-            setImage(prevImage => ({ ...prevImage, imageUrl: result.newImageUrl }));
-        } catch (error) {
-            alert(`Fout: ${error.message}`);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    return (
-        <div className="space-y-4">
-            <h3 className="font-semibold text-dark">Zoom Out</h3>
-            <p className="text-sm text-gray-600">Expand the canvas of your image...</p>
-            <Button className="w-full" onClick={handleGenerate} disabled={isLoading}>
-                {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Genereren...</>) : 'Generate More'}
-            </Button>
-        </div>
-    );
+      </div>
+    </div>
+  );
 }
