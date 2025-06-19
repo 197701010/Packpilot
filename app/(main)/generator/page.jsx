@@ -53,7 +53,7 @@ export default function GeneratorWizardPage() {
                 throw new Error(errorResult.detail || "Fout bij starten van generatie.");
             }
             const prediction = await response.json();
-            router.push(`/generator/resultaat/${prediction.id}`);
+            router.push(`/generator/results/${prediction.id}`);
         } catch (error) {
             console.error("Fout bij submitten:", error);
             alert(error.message);
