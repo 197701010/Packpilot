@@ -1,240 +1,358 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 
 export default function GeneratorResultsPage() {
   const params = useParams();
-  const { id } = params;
+  const searchParams = useSearchParams();
   
-  const [result, setResult] = useState(null);
+  // Get ID from URL params with fallbacks
+  const id = params.id || params.slug;
+  const batchParam = searchParams.get('batch');
+  const totalParam = searchParams.get('total');
+  
+  // State management
+  const [results, setResults] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isBatch, setIsBatch] = useState(false);
+  const [batchIds, setBatchIds] = useState([]);
+  
+  console.log('🔍 Page Debug:', {
+    id: id,
+    batch: batchParam,
+    total: totalParam,
+    params: params,
+    searchParams: Object.fromEntries(searchParams.entries())
+  });
 
-  const checkStatus = async () => {
-    try {
-      console.log('🔥 CHECKING API ROUTE:', `/api/checkstatus/${id}`);
-      const response = await fetch(`/api/checkstatus/${id}`);
-      
-      if (!response.ok) {
-        throw new Error(`Status check failed: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('📊 Status result:', data);
-      
-      setResult(data);
-      setLoading(false);
-      
-    } catch (error) {
-      console.error('❌ Error checking status:', error);
-      setError(error.message);
-      setLoading(false);
-    }
-  };
-
+  // Initialize batch or single mode
   useEffect(() => {
-    if (id) {
-      checkStatus();
+    if (!id) {
+      setError('Geen geldig ID gevonden in URL');
+      setLoading(false);
+      return;
     }
-  }, [id]);
 
-  // Extract image URL from various possible locations
-  const getImageUrl = (result) => {
-    if (!result) return null;
-    
-    console.log('🔍 Searching for image URL in result:', result);
-    
-    // Try different possible locations for the image URL
-    const possibleUrls = [
-      result.output?.sample,           // ← This is where it actually is!
-      result.output,                   // In case output is direct string
-      result.result?.sample,
-      result.result?.output,
-      result.sample,
-      result.image_url,
-      result.raw_result?.result?.sample // Also check raw_result
-    ];
-    
-    for (const url of possibleUrls) {
-      if (url && typeof url === 'string' && url.startsWith('http')) {
-        console.log('🖼️ Found image URL:', url);
-        return url;
-      }
+    if (batchParam) {
+      // Batch mode
+      const ids = batchParam.split(',').filter(Boolean);
+      console.log('📊 Batch mode detected:', ids);
+      setIsBatch(true);
+      setBatchIds(ids);
+      
+      // Initialize results for all IDs
+      const initialResults = {};
+      ids.forEach(batchId => {
+        initialResults[batchId] = {
+          id: batchId,
+          status: 'Pending',
+          output: null,
+          service: 'bfl',
+          completed: false
+        };
+      });
+      setResults(initialResults);
+    } else {
+      // Single mode
+      console.log('🎯 Single mode detected:', id);
+      setIsBatch(false);
+      setBatchIds([id]);
+      setResults({
+        [id]: {
+          id: id,
+          status: 'Pending',
+          output: null,
+          service: 'bfl',
+          completed: false
+        }
+      });
     }
     
-    console.log('❌ No valid image URL found in result');
-    console.log('🔍 Checked these locations:', possibleUrls);
-    return null;
+    setLoading(false);
+  }, [id, batchParam]);
+
+  // Status checking function
+  const checkStatus = async (imageId) => {
+    try {
+      console.log(`🔍 Checking status for: ${imageId}`);
+      
+      const response = await fetch(`/api/checkstatus/${imageId}`);
+      const data = await response.json();
+      
+      console.log(`📊 Status response for ${imageId}:`, data);
+      
+      if (data.status === 'Ready' && data.completed === true) {
+        console.log(`✅ Image ${imageId} is ready!`);
+        return data;
+      } else if (data.status === 'Error' || data.error) {
+        console.log(`❌ Image ${imageId} failed:`, data.error);
+        return { ...data, status: 'Error' };
+      } else {
+        console.log(`⏳ Image ${imageId} still processing...`);
+        return data;
+      }
+    } catch (error) {
+      console.error(`❌ Status check failed for ${imageId}:`, error);
+      return {
+        id: imageId,
+        status: 'Error',
+        error: `Status check failed: ${error.message}`,
+        completed: false
+      };
+    }
   };
 
-  const imageUrl = getImageUrl(result);
-  const proxyUrl = imageUrl ? `/api/image-proxy?url=${encodeURIComponent(imageUrl)}` : null;
+  // Polling function
+  useEffect(() => {
+    if (batchIds.length === 0) return;
+
+    const pollStatuses = async () => {
+      const updatedResults = { ...results };
+      let allCompleted = true;
+      let hasChanges = false;
+
+      for (const imageId of batchIds) {
+        const currentResult = updatedResults[imageId];
+        
+        // Skip if already completed or errored
+        if (currentResult?.completed || currentResult?.status === 'Error') {
+          continue;
+        }
+
+        allCompleted = false;
+        const newData = await checkStatus(imageId);
+        
+        if (JSON.stringify(newData) !== JSON.stringify(currentResult)) {
+          updatedResults[imageId] = newData;
+          hasChanges = true;
+        }
+      }
+
+      if (hasChanges) {
+        setResults(updatedResults);
+      }
+
+      // Check if all are completed
+      allCompleted = batchIds.every(imageId => 
+        updatedResults[imageId]?.completed || 
+        updatedResults[imageId]?.status === 'Error'
+      );
+
+      if (!allCompleted) {
+        // Continue polling every 1 second for faster updates
+        setTimeout(pollStatuses, 1000);
+      } else {
+        console.log('🎉 All images completed!');
+      }
+    };
+
+    // Start polling
+    const timer = setTimeout(pollStatuses, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [batchIds, results]);
+
+  // Early return for errors
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <h1 className="text-2xl font-bold mb-4">Resultaten</h1>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-600">Fout: {error}</p>
+          <div className="mt-4 text-sm text-gray-600">
+            <p><strong>Debug Info:</strong></p>
+            <p>URL ID: {id || 'null'}</p>
+            <p>Batch Param: {batchParam || 'null'}</p>
+            <p>Params: {JSON.stringify(params)}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-4">Je Ontwerp</h1>
-          <p className="text-gray-600 mb-8">Resultaat van je packaging generatie</p>
-          
-          <div className="bg-white rounded-lg shadow-lg p-6">
-            <div className="animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
-              <div className="h-64 bg-gray-200 rounded mb-4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            </div>
-          </div>
+      <div className="max-w-4xl mx-auto p-6">
+        <h1 className="text-2xl font-bold mb-4">Resultaten</h1>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-blue-600">⏳ Pagina wordt geladen...</p>
         </div>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-4">Je Ontwerp</h1>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <h3 className="text-red-800 font-semibold mb-2">Er is een fout opgetreden</h3>
-            <p className="text-red-600">{error}</p>
-            <button 
-              onClick={checkStatus}
-              className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-            >
-              Probeer opnieuw
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const isCompleted = result?.completed || result?.status === 'Ready' || result?.status === 'succeeded';
-  const statusColor = isCompleted ? 'green' : 'blue';
-  const statusText = isCompleted ? 'Voltooid' : 'Bezig...';
+  // Calculate completion stats
+  const completedCount = batchIds.filter(imageId => 
+    results[imageId]?.completed || results[imageId]?.status === 'Ready'
+  ).length;
+  const errorCount = batchIds.filter(imageId => 
+    results[imageId]?.status === 'Error'
+  ).length;
+  const pendingCount = batchIds.length - completedCount - errorCount;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold mb-4">Je Ontwerp</h1>
-        <p className="text-gray-600 mb-8">Resultaat van je packaging generatie</p>
+    <div className="max-w-6xl mx-auto p-6">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Resultaten</h1>
         
-        <div className="flex gap-4 mb-6">
-          <button 
-            onClick={checkStatus}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Vernieuwen
-          </button>
-          <button 
-            onClick={() => window.location.href = '/generator'}
-            className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            Terug naar Generator
-          </button>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-lg p-6">
+        {isBatch && (
           <div className="mb-6">
-            <h3 className="text-xl font-semibold mb-4">Ontwerp Details</h3>
-            <div className="flex items-center gap-4 mb-4">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                statusColor === 'green' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-blue-100 text-blue-800'
-              }`}>
-                {statusText}
-              </span>
-            </div>
-            
-            <div className="space-y-2 text-sm text-gray-600">
-              <p><span className="font-medium">ID:</span> {result?.id}</p>
-              <p><span className="font-medium">Service:</span> {result?.service}</p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h2 className="text-lg font-semibold mb-2">📊 Batch Voortgang</h2>
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{completedCount}</div>
+                  <div className="text-gray-600">Voltooid</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">{pendingCount}</div>
+                  <div className="text-gray-600">Bezig</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-red-600">{errorCount}</div>
+                  <div className="text-gray-600">Gefaald</div>
+                </div>
+              </div>
+              
+              {pendingCount > 0 && (
+                <div className="mt-4">
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(completedCount / batchIds.length) * 100}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-center text-sm text-gray-600 mt-2">
+                    {completedCount} van {batchIds.length} ontwerpen klaar
+                  </p>
+                </div>
+              )}
             </div>
           </div>
+        )}
 
-          {/* Image Display */}
-          {isCompleted && imageUrl ? (
-            <div className="mb-6">
-              <h4 className="font-semibold mb-4 text-lg">🎉 Je AI-gegenereerde ontwerp:</h4>
-              <div className="space-y-4">
-                <div className="border rounded-lg overflow-hidden">
-                  <img 
-                    src={proxyUrl}
-                    alt="AI-gegenereerd packaging ontwerp"
-                    className="w-full max-w-2xl mx-auto block"
-                    style={{ maxHeight: '600px', objectFit: 'contain' }}
-                    onLoad={() => console.log('✅ Image loaded successfully via proxy')}
-                    onError={(e) => {
-                      console.error('❌ Image failed to load via proxy');
-                      console.log('🔗 Tried to load:', proxyUrl);
-                    }}
-                  />
-                </div>
-                
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h5 className="text-green-800 font-semibold mb-2">
-                    🎊 Je ontwerp is succesvol gegenereerd! (Gemaakt met Black Forest Labs Flux AI)
-                  </h5>
-                  <p className="text-green-700 text-sm mb-3">
-                    Klik met de rechtermuisknop op de afbeelding om op te slaan, of gebruik de download knop als de afbeelding niet zichtbaar is.
-                  </p>
-                  <div className="flex gap-2">
-                    <a 
-                      href={proxyUrl}
-                      download={`packaging-design-${id}.jpg`}
-                      className="bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700 transition-colors"
-                    >
-                      📥 Download Afbeelding
-                    </a>
-                    <a 
-                      href={imageUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition-colors"
-                    >
-                      🔗 Originele Link
-                    </a>
+        {/* Results Grid */}
+        <div className={`grid gap-6 ${isBatch ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+          {batchIds.map((imageId, index) => {
+            const result = results[imageId];
+            if (!result) return null;
+
+            return (
+              <div key={imageId} className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                <div className="p-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="font-semibold">
+                      {isBatch ? `Ontwerp ${index + 1}` : 'Je Ontwerp'}
+                    </h3>
+                    
+                    {/* Status Badge */}
+                    {result.status === 'Ready' || result.completed ? (
+                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
+                        ✅ Voltooid
+                      </span>
+                    ) : result.status === 'Error' ? (
+                      <span className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">
+                        ❌ Gefaald
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
+                        ⏳ Bezig
+                      </span>
+                    )}
                   </div>
-                </div>
-              </div>
-            </div>
-          ) : isCompleted ? (
-            <div className="mb-6">
-              <h4 className="font-semibold mb-4">⚠️ Ontwerp voltooid maar geen afbeelding gevonden</h4>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-yellow-800">
-                  Het ontwerp is klaar, maar de afbeelding kon niet worden geladen. 
-                  Probeer de pagina te vernieuwen of neem contact op met support.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="mb-6">
-              <h4 className="font-semibold mb-4">⏳ Je ontwerp wordt gegenereerd...</h4>
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-blue-800">
-                  Dit kan 1-3 minuten duren. De pagina wordt automatisch bijgewerkt.
-                </p>
-                <div className="mt-2 w-full bg-blue-200 rounded-full h-2">
-                  <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* Debug/Technical Details */}
-          <details className="mt-6">
-            <summary className="cursor-pointer font-medium text-gray-700 hover:text-gray-900">
-              ▶ Technische details tonen
-            </summary>
-            <div className="mt-4 bg-gray-50 rounded-lg p-4">
-              <pre className="text-xs text-gray-600 overflow-auto max-h-64">
-                {JSON.stringify(result, null, 2)}
-              </pre>
-            </div>
-          </details>
+                  {/* Image Display */}
+                  {result.status === 'Ready' && result.output?.sample ? (
+                    <div className="mb-4">
+                      <img
+                        src={`/api/image-proxy?url=${encodeURIComponent(result.output.sample)}`}
+                        alt={`AI-gegenereerd packaging ontwerp ${index + 1}`}
+                        className="w-full max-h-96 object-contain rounded-lg border bg-white"
+                        onError={(e) => {
+                          console.error(`❌ Image failed to load for ${imageId}`);
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'block';
+                        }}
+                      />
+                      <div 
+                        className="w-full h-64 bg-gray-100 rounded-lg border flex items-center justify-center text-gray-500"
+                        style={{ display: 'none' }}
+                      >
+                        <div className="text-center">
+                          <p className="mb-2">❌ Image failed to load via proxy</p>
+                          <a 
+                            href={result.output.sample}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline text-sm"
+                          >
+                            Open originele link
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  ) : result.status === 'Error' ? (
+                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-red-600 text-sm">
+                        {result.error || 'Er is een fout opgetreden tijdens het genereren'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mb-4 p-8 bg-gray-50 border border-gray-200 rounded-lg">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                        <p className="text-gray-600 text-sm">⏳ Je ontwerp wordt gegenereerd...</p>
+                        <p className="text-gray-500 text-xs mt-1">Dit kan 1-3 minuten duren</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  {result.status === 'Ready' && result.output?.sample && (
+                    <div className="flex gap-2">
+                      <a
+                        href={`/api/image-proxy?url=${encodeURIComponent(result.output.sample)}`}
+                        download={`packaging-ontwerp-${index + 1}.jpg`}
+                        className="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors text-center text-sm"
+                      >
+                        📥 Download Afbeelding
+                      </a>
+                      <a
+                        href={result.output.sample}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors text-center text-sm"
+                      >
+                        🔗 Originele Link
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Technical Details */}
+                  <details className="mt-4">
+                    <summary className="cursor-pointer text-sm text-gray-600 hover:text-gray-800">
+                      ▶ Technische details tonen
+                    </summary>
+                    <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-x-auto">
+                      {JSON.stringify(result, null, 2)}
+                    </pre>
+                  </details>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Navigation */}
+        <div className="mt-8 flex justify-center">
+          <a
+            href="/generator"
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            ← Terug naar Generator
+          </a>
         </div>
       </div>
     </div>

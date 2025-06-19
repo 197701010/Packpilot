@@ -5,194 +5,374 @@ import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
-import { ArrowLeft, Check, Loader2 } from 'lucide-react';
+import { ArrowRight, Sparkles, Clock, Zap } from 'lucide-react';
 
-// --- Data (de volledige lijsten) ---
 const packagingTypes = [
-    { name: "Adventskalender", img: "https://placehold.co/400x400/F3F4F6/F3F4F6" }, { name: "Spuitbus", img: "https://placehold.co/400x400/F3F4F6/F3F4F6" },
-    { name: "Pompflacon", img: "https://placehold.co/400x400/F3F4F6/F3F4F6" }, { name: "Reep-folie", img: "https://placehold.co/400x400/F3F4F6/F3F4F6" },
-    { name: "Bierfles", img: "https://placehold.co/400x400/F3F4F6/F3F4F6" }, { name: "Koekblik", img: "https://placehold.co/400x400/F3F4F6/F3F4F6" },
-    { name: "Bordeaux Wijnfles", img: "https://placehold.co/400x400/F3F4F6/F3F4F6" }, { name: "Doos met Venster", img: "https://placehold.co/400x400/F3F4F6/F3F4F6" },
-    { name: "Taartdoos", img: "https://placehold.co/400x400/F3F4F6/F3F4F6" }, { name: "Kartonnen Doos", img: "https://placehold.co/400x400/F3F4F6/F3F4F6" },
+  'Doos', 'Fles', 'Blik', 'Tube', 'Zakje', 'Pot', 'Karton', 'Wrapper'
 ];
-const colorOptions = [
-    { name: "Plum", hex: "#8E4585" }, { name: "Wisteria Purple", hex: "#C9A0DC" }, { name: "Heliotrope", hex: "#DF73FF" },
-    { name: "Lavender", hex: "#E6E6FA" }, { name: "Lilac", hex: "#C8A2C8" }, { name: "Periwinkle", hex: "#CCCCFF" },
+
+const colors = [
+  'Rood', 'Blauw', 'Groen', 'Geel', 'Oranje', 'Paars', 'Roze', 'Zwart', 
+  'Wit', 'Grijs', 'Bruin', 'Beige', 'Goud', 'Zilver'
 ];
+
 const styles = [
-    { name: "Minimalistic", desc: "Simplicity and clarity.", img: "https://picsum.photos/seed/minimalistic/400/400" },
-    { name: "Modern", desc: "Clean lines and a neutral color palette.", img: "https://picsum.photos/seed/modern/400/400" },
-    { name: "Bold", desc: "A focus on bold typography and patterns.", img: "https://picsum.photos/seed/bold/400/400" },
-    { name: "Vintage", desc: "Nostalgic typography, colors and patterns.", img: "https://picsum.photos/seed/vintage/400/400" },
+  'Modern', 'Vintage', 'Minimalistisch', 'Bold', 'Elegant', 'Playful', 
+  'Professional', 'Organic', 'Luxe', 'Industrieel'
 ];
 
-// --- Hoofd Pagina Component ---
-export default function GeneratorWizardPage() {
-    const router = useRouter();
-    const [step, setStep] = useState(1);
-    const [isLoading, setIsLoading] = useState(false);
-    const [formData, setFormData] = useState({
-        packagingType: '', companyName: '', slogan: '', logoFile: null, colors: [],
-        prompt: '', packagingLook: '', styles: [], imageCount: 1, variations: [],
-    });
+export default function GeneratorPage() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Form state
+  const [packagingType, setPackagingType] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [slogan, setSlogan] = useState('');
+  const [logoFile, setLogoFile] = useState(null);
+  const [selectedColors, setSelectedColors] = useState([]);
+  const [customPrompt, setCustomPrompt] = useState('');
+  const [packagingLook, setPackagingLook] = useState('');
+  const [selectedStyles, setSelectedStyles] = useState([]);
+  const [imageCount, setImageCount] = useState(1);
+  const [aiService, setAiService] = useState('bfl');
 
-    const handleNextStep = () => setStep(prev => prev < 4 ? prev + 1 : prev);
-    const handlePrevStep = () => setStep(prev => prev > 1 ? prev - 1 : prev);
-    const updateFormData = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+  const handleColorToggle = (color) => {
+    setSelectedColors(prev => 
+      prev.includes(color) 
+        ? prev.filter(c => c !== color)
+        : [...prev, color]
+    );
+  };
 
-    const handleSubmit = async () => {
-        setIsLoading(true);
-        try {
-            const response = await fetch('/api/generator/create', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-            });
-            if (!response.ok) {
-                const errorResult = await response.json();
-                throw new Error(errorResult.detail || "Fout bij starten van generatie.");
-            }
-            const prediction = await response.json();
-            router.push(`/generator/results/${prediction.id}`);
-        } catch (error) {
-            console.error("Fout bij submitten:", error);
-            alert(error.message);
-            setIsLoading(false);
+  const handleStyleToggle = (style) => {
+    setSelectedStyles(prev => 
+      prev.includes(style) 
+        ? prev.filter(s => s !== style)
+        : [...prev, style]
+    );
+  };
+
+  const isFormValid = () => {
+    return packagingType && selectedColors.length > 0 && selectedStyles.length > 0;
+  };
+
+  const getEstimatedTime = () => {
+    if (aiService === 'bfl') {
+      return `${Math.ceil(imageCount * 0.5)}-${imageCount * 2} minuten`;
+    } else {
+      return `${imageCount * 8}-${imageCount * 15} minuten`;
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!isFormValid()) {
+      alert('Vul alle verplichte velden in (packaging type, minimaal 1 kleur, minimaal 1 stijl)');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      console.log('🚀 Starting generation with:', {
+        packagingType,
+        colors: selectedColors,
+        styles: selectedStyles,
+        imageCount,
+        aiService
+      });
+
+      const response = await fetch('/api/generator/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          packagingType,
+          companyName,
+          slogan,
+          logoFile,
+          colors: selectedColors,
+          prompt: customPrompt,
+          packagingLook,
+          styles: selectedStyles,
+          imageCount,
+          aiService
+        })
+      });
+
+      const prediction = await response.json();
+      console.log('📊 API Response:', prediction);
+
+      if (prediction.success) {
+        // Smart redirect logic
+        let redirectUrl;
+        
+        if (prediction.redirect_url) {
+          redirectUrl = prediction.redirect_url;
+        } else if (prediction.batch && prediction.requests?.length > 0) {
+          const batchIds = prediction.requests.map(r => r.id).join(',');
+          redirectUrl = `/generator/results/${prediction.requests[0].id}?batch=${batchIds}&total=${prediction.requests.length}`;
+        } else if (prediction.id) {
+          redirectUrl = `/generator/results/${prediction.id}`;
+        } else {
+          throw new Error('Geen geldige response ontvangen');
         }
-    };
+        
+        console.log('🔄 Redirecting to:', redirectUrl);
+        router.push(redirectUrl);
+      } else {
+        throw new Error(prediction.error || 'Er is een fout opgetreden');
+      }
+    } catch (error) {
+      console.error('❌ Generation error:', error);
+      alert(`Er is een fout opgetreden: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const STEPS = [
-        { number: 1, title: "YOUR DESIGN", component: <Step1_PackagingType onUpdate={updateFormData} onNext={handleNextStep} currentValue={formData.packagingType} /> },
-        { number: 2, title: "YOUR BRAND", component: <Step2_Branding onUpdate={updateFormData} onNext={handleNextStep} onBack={handlePrevStep} formData={formData} /> },
-        { number: 3, title: "YOUR DESIGN", component: <Step3_Describe onUpdate={updateFormData} onNext={handleNextStep} onBack={handlePrevStep} formData={formData} /> },
-        { number: 4, title: "CONFIGURATION", component: <Step4_Configure onUpdate={updateFormData} onSubmit={handleSubmit} onBack={handlePrevStep} formData={formData} isLoading={isLoading} /> }
-    ];
-    const currentStepData = STEPS.find(s => s.number === step);
+  return (
+    <div className="max-w-4xl mx-auto p-6">
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-bold mb-4">AI Packaging Generator</h1>
+        <p className="text-gray-600 text-lg">
+          Genereer professionele packaging ontwerpen met AI in minuten
+        </p>
+      </div>
 
-    return (
-        <div className="p-4 sm:p-8 bg-white min-h-full">
-            {currentStepData && (
-                <>
-                    <header className="max-w-5xl mx-auto mb-8">
-                        <p className="text-sm font-bold uppercase text-gray-500">{currentStepData.title}</p>
-                        <div className="flex justify-between items-center mt-2">
-                            {step > 1 ? <Button variant="outline" onClick={handlePrevStep} disabled={isLoading}><ArrowLeft className="mr-2 h-4 w-4"/>Back</Button> : <div></div>}
-                            {step < 4 && <Button onClick={handleNextStep}>Next</Button>}
-                            {step === 4 && <Button onClick={handleSubmit} disabled={isLoading}>
-                                {isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Genereren...</>) : ('Generate')}
-                            </Button>}
-                        </div>
-                    </header>
-                    <main>
-                        {currentStepData.component}
-                    </main>
-                </>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* AI Service Selection */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="text-lg font-semibold mb-3">🤖 AI Service</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <label className={`cursor-pointer p-3 border rounded-lg transition-colors ${
+              aiService === 'bfl' ? 'border-blue-500 bg-blue-100' : 'border-gray-300 hover:border-blue-300'
+            }`}>
+              <input
+                type="radio"
+                name="aiService"
+                value="bfl"
+                checked={aiService === 'bfl'}
+                onChange={(e) => setAiService(e.target.value)}
+                className="sr-only"
+              />
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-semibold flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-green-600" />
+                    Black Forest Labs
+                  </div>
+                  <div className="text-sm text-gray-600">Snel, 30s-2min per image</div>
+                </div>
+                <div className="text-green-600 font-bold">Aanbevolen</div>
+              </div>
+            </label>
+            
+            <label className={`cursor-pointer p-3 border rounded-lg transition-colors ${
+              aiService === 'replicate' ? 'border-blue-500 bg-blue-100' : 'border-gray-300 hover:border-blue-300'
+            }`}>
+              <input
+                type="radio"
+                name="aiService"
+                value="replicate"
+                checked={aiService === 'replicate'}
+                onChange={(e) => setAiService(e.target.value)}
+                className="sr-only"
+              />
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-semibold flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-orange-600" />
+                    Replicate
+                  </div>
+                  <div className="text-sm text-gray-600">Langzaam, 8-15min per image</div>
+                </div>
+                <div className="text-orange-600 font-bold">Backup</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        {/* Image Count */}
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <h3 className="text-lg font-semibold mb-3">📊 Aantal Ontwerpen (Max 3 voor optimale snelheid)</h3>
+          <div className="flex items-center gap-4">
+            <input
+              type="range"
+              min="1"
+              max="3"
+              value={imageCount}
+              onChange={(e) => setImageCount(parseInt(e.target.value))}
+              className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+              style={{
+                background: `linear-gradient(to right, #10b981 0%, #10b981 ${((imageCount-1)/2)*100}%, #e5e7eb ${((imageCount-1)/2)*100}%, #e5e7eb 100%)`
+              }}
+            />
+            <div className="text-2xl font-bold text-green-600 min-w-[3rem] text-center">
+              {imageCount}
+            </div>
+          </div>
+          
+          {/* Visual indicators */}
+          <div className="flex justify-between text-xs text-gray-500 mt-1 px-1">
+            <span className={imageCount === 1 ? 'font-bold text-green-600' : ''}>1</span>
+            <span className={imageCount === 2 ? 'font-bold text-green-600' : ''}>2</span>
+            <span className={imageCount === 3 ? 'font-bold text-green-600' : ''}>3</span>
+          </div>
+          
+          <div className="text-sm text-gray-600 mt-2 flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Geschatte tijd: {getEstimatedTime()}
+          </div>
+        </div>
+
+        {/* Packaging Type */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            📦 Packaging Type *
+          </label>
+          <select
+            value={packagingType}
+            onChange={(e) => setPackagingType(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            required
+          >
+            <option value="">Selecteer packaging type</option>
+            {packagingTypes.map(type => (
+              <option key={type} value={type}>{type}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Company Info */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              🏢 Bedrijfsnaam (Optioneel)
+            </label>
+            <Input
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="Bijv. Royal Delights"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              💬 Slogan (Optioneel)
+            </label>
+            <Input
+              value={slogan}
+              onChange={(e) => setSlogan(e.target.value)}
+              placeholder="Bijv. Premium Quality"
+            />
+          </div>
+        </div>
+
+        {/* Colors */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            🎨 Kleuren (Minimaal 1) *
+          </label>
+          <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
+            {colors.map(color => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => handleColorToggle(color)}
+                className={`p-2 text-sm border rounded transition-colors ${
+                  selectedColors.includes(color)
+                    ? 'border-blue-500 bg-blue-100 text-blue-700'
+                    : 'border-gray-300 hover:border-blue-300'
+                }`}
+              >
+                {color}
+              </button>
+            ))}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            Geselecteerd: {selectedColors.join(', ') || 'Geen'}
+          </div>
+        </div>
+
+        {/* Styles */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            ✨ Stijlen (Minimaal 1) *
+          </label>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+            {styles.map(style => (
+              <button
+                key={style}
+                type="button"
+                onClick={() => handleStyleToggle(style)}
+                className={`p-2 text-sm border rounded transition-colors ${
+                  selectedStyles.includes(style)
+                    ? 'border-blue-500 bg-blue-100 text-blue-700'
+                    : 'border-gray-300 hover:border-blue-300'
+                }`}
+              >
+                {style}
+              </button>
+            ))}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            Geselecteerd: {selectedStyles.join(', ') || 'Geen'}
+          </div>
+        </div>
+
+        {/* Custom Prompt */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            📝 Specifieke Wensen (Optioneel maar aanbevolen voor precisie)
+          </label>
+          <Textarea
+            value={customPrompt}
+            onChange={(e) => setCustomPrompt(e.target.value)}
+            placeholder="Bijvoorbeeld: 'Simpele ronde pot met rood deksel, minimalistisch design, geen tekst, witte achtergrond'"
+            rows={3}
+          />
+          <div className="text-xs text-gray-500 mt-1">
+            💡 Tip: Wees specifiek over vorm, materiaal, kleurplaatsing en stijl voor betere resultaten
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        <div className="pt-4">
+          <Button
+            type="submit"
+            disabled={!isFormValid() || isLoading}
+            className={`w-full py-4 text-lg font-semibold flex items-center justify-center gap-2 transition-all ${
+              isLoading 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : isFormValid()
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                  : 'bg-gray-300 cursor-not-allowed text-gray-500'
+            }`}
+          >
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                Genereren...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-5 h-5" />
+                Genereer {imageCount} ontwerp{imageCount > 1 ? 'en' : ''}
+                <ArrowRight className="w-5 h-5" />
+              </>
             )}
+          </Button>
+          
+          {!isFormValid() && (
+            <p className="text-sm text-red-600 mt-2 text-center">
+              Vul alle verplichte velden in om te kunnen genereren
+            </p>
+          )}
         </div>
-    );
-}
-
-// --- Componenten voor elke Stap ---
-
-function Step1_PackagingType({ onUpdate, onNext, currentValue }) {
-    return (
-        <div className="text-center max-w-6xl mx-auto">
-            <h1 className="font-display text-4xl text-dark mt-2 mb-8">Kies je verpakking</h1>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
-                {packagingTypes.map(type => (
-                    <div key={type.name} onClick={() => onUpdate('packagingType', type.name)} className={`rounded-lg cursor-pointer border-2 transition-all overflow-hidden ${currentValue === type.name ? 'border-brand-primary ring-2 ring-brand-primary' : 'bg-white border-gray-200 hover:border-gray-400'}`}>
-                        <img src={type.img} alt={type.name} className="h-40 w-full object-cover bg-gray-100" />
-                        <p className="font-semibold text-dark p-3 bg-white">{type.name}</p>
-                    </div>
-                ))}
-            </div>
-            <Button onClick={onNext} disabled={!currentValue} size="lg">Volgende</Button>
-        </div>
-    );
-}
-
-function Step2_Branding({ onUpdate, onNext, onBack, formData }) {
-    const toggleColor = (colorName) => {
-        const currentColors = formData.colors || [];
-        const newColors = currentColors.includes(colorName) ? currentColors.filter(c => c !== colorName) : [...currentColors, colorName];
-        if (newColors.length > 4) { alert("Maximaal 4 kleuren."); return; }
-        onUpdate('colors', newColors);
-    };
-    return (
-        <div className="max-w-3xl mx-auto">
-            <h1 className="font-display text-4xl text-center text-dark mb-8">Add your branding</h1>
-            <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label className="font-semibold text-sm mb-2 block">Company</label><Input type="text" value={formData.companyName || ''} onChange={(e) => onUpdate('companyName', e.target.value)} /></div>
-                    <div><label className="font-semibold text-sm mb-2 block">Slogan</label><Input type="text" value={formData.slogan || ''} onChange={(e) => onUpdate('slogan', e.target.value)} /></div>
-                </div>
-                <div><label className="font-semibold text-sm mb-2 block">Logo (optional)</label><Input type="file" onChange={(e) => onUpdate('logoFile', e.target.files[0])} /></div>
-                <div>
-                    <label className="font-semibold text-sm mb-2 block">Choose up to 4 colours (optional)</label>
-                    <div className="h-48 grid grid-cols-6 sm:grid-cols-9 gap-2 mt-2 overflow-y-auto p-2 border rounded-lg">
-                        {colorOptions.map(color => (<div key={color.name} onClick={() => toggleColor(color.name)} className="relative h-12 rounded-lg cursor-pointer flex items-center justify-center border-2" style={{ backgroundColor: color.hex }}>{(formData.colors || []).includes(color.name) && (<div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center rounded-lg ring-2 ring-offset-2 ring-brand-primary"><Check className="text-white" /></div>)}</div>))}
-                    </div>
-                </div>
-            </div>
-            <div className="flex justify-between items-center mt-8"><Button onClick={onBack} variant="outline"><ArrowLeft className="mr-2 h-4 w-4"/>Terug</Button><Button onClick={onNext}>Volgende</Button></div>
-        </div>
-    );
-}
-
-function Step3_Describe({ onUpdate, onNext, onBack, formData }) {
-    const toggleStyle = (styleName) => {
-        const currentStyles = formData.styles || [];
-        const newStyles = currentStyles.includes(styleName) ? currentStyles.filter(s => s !== styleName) : [...currentStyles, styleName];
-        onUpdate('styles', newStyles);
-    };
-    return (
-        <div className="max-w-5xl mx-auto">
-            <h1 className="font-display text-4xl text-center text-dark mb-8">Describe your design</h1>
-            <div><label className="font-semibold text-sm mb-2 block">How should your packaging look? <span className="text-gray-500 font-normal">optional</span></label><Textarea value={formData.prompt || ''} onChange={(e) => onUpdate('prompt', e.target.value)} rows={3} placeholder="e.g. Create a sleek matte box with pastel pinks, a foil finishes, and bold clear text that delights every unboxing" /></div>
-            <div className="mt-8">
-                <label className="font-semibold text-sm mb-2 block">Choose up to 5 styles <span className="text-gray-500 font-normal">optional</span></label>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {styles.map(style => (<div key={style.name} onClick={() => toggleStyle(style.name)} className={`rounded-lg border-2 bg-white overflow-hidden cursor-pointer transition-all ${ (formData.styles || []).includes(style.name) ? 'border-brand-primary ring-2 ring-brand-primary' : 'border-gray-200'}`}><img src={style.img} alt={style.name} className="h-32 w-full object-cover" /><div className="p-4"><h3 className="font-semibold">{style.name}</h3><p className="text-sm text-gray-500">{style.desc}</p></div></div>))}
-                </div>
-            </div>
-            <div className="flex justify-between items-center mt-8"><Button onClick={onBack} variant="outline"><ArrowLeft className="mr-2 h-4 w-4"/>Terug</Button><Button onClick={onNext}>Volgende</Button></div>
-        </div>
-    );
-}
-
-function Step4_Configure({ onUpdate, onSubmit, onBack, formData, isLoading }) {
-    const toggleVariation = (variation) => {
-        const currentVariations = formData.variations || [];
-        const newVariations = currentVariations.includes(variation) ? currentVariations.filter(v => v !== variation) : [...currentVariations, variation];
-        onUpdate('variations', newVariations);
-    };
-    return (
-        <div className="max-w-5xl mx-auto">
-             <h1 className="font-display text-4xl text-center text-dark mb-8">Final step</h1>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                    <label className="font-semibold text-sm mb-2 block">Choose how many images to generate</label>
-                    <p className="text-xs text-gray-500">1 credit per image</p>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-4">
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (<button key={num} onClick={() => onUpdate('imageCount', num)} className={`p-4 rounded-lg font-semibold border-2 text-lg ${formData.imageCount === num ? 'border-brand-primary bg-red-50' : 'bg-gray-100 border-transparent'}`}>{num}</button>))}
-                    </div>
-                </div>
-                 <div>
-                    <label className="font-semibold text-sm mb-2 block">Creative variations</label>
-                    <p className="text-xs text-gray-500">Adds additional designs that re-interpret your prompt</p>
-                    <div className="space-y-3 mt-4">
-                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                            <div><h4 className="font-semibold">Luxury</h4><p className="text-sm text-gray-500">Adds premium and sophisticated high-quality aesthetics</p></div>
-                            <input type="checkbox" onChange={() => toggleVariation('luxury')} checked={(formData.variations || []).includes('luxury')} className="h-5 w-5 rounded text-brand-primary focus:ring-brand-primary" />
-                        </div>
-                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                             <div><h4 className="font-semibold">Creative</h4><p className="text-sm text-gray-500">Experimental, avant-garde and artistic interpretations</p></div>
-                             <input type="checkbox" onChange={() => toggleVariation('creative')} checked={(formData.variations || []).includes('creative')} className="h-5 w-5 rounded text-brand-primary focus:ring-brand-primary" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-             <div className="flex justify-between items-center mt-8"><Button onClick={onBack} variant="outline" disabled={isLoading}><ArrowLeft className="mr-2 h-4 w-4"/>Terug</Button><Button onClick={onSubmit} disabled={isLoading}>{isLoading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Genereren...</>) : ('Generate')}</Button></div>
-        </div>
-    );
+      </form>
+    </div>
+  );
 }
